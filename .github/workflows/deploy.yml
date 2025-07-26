@@ -1,11 +1,9 @@
-name: Deploy Subproject to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -17,40 +15,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Detect Last Modified Folder
-        id: detect
-        run: |
-          echo "Detecting modified subfolder..."
-          folder=$(git diff --name-only origin/main...HEAD | grep '/' | cut -d/ -f1 | sort | uniq | tail -n 1)
-          if [ -z "$folder" ] || [ ! -d "$folder" ]; then
-            echo "No valid subfolder found. Exiting."
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "Found folder: $folder"
-            echo "folder=$folder" >> $GITHUB_OUTPUT
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Exit if No Valid Folder
-        if: ${{ steps.detect.outputs.skip == 'true' }}
-        run: exit 0
-
-      - name: Setup GitHub Pages
+      - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload Site Files
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ steps.detect.outputs.folder }}
+          path: "."  # deploy the whole repo (with all subfolders)
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Print Deployed URL
+      - name: 🔗 Print deployed URLs
         run: |
-          echo "✅ Deployment Successful!"
-          echo "🔗 URL:"
-          echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ steps.detect.outputs.folder }}/"
+          echo "✅ GitHub Pages is live!"
+          echo "Main URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          echo ""
+          echo "📂 Sub-projects you can visit:"
+          for dir in */ ; do
+            if [[ -f "$dir/index.html" ]]; then
+              name=$(basename "$dir")
+              echo "- https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$name/"
+            fi
+          done
