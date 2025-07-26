@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # or master, if that’s your default
+      - main
 
 permissions:
   contents: read
@@ -13,8 +13,9 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout source
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Pages
@@ -23,7 +24,21 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "."  # 👈 deploy the entire repo (including all folders)
+          path: "."  # deploy the whole repo (with all subfolders)
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: 🔗 Print deployed URLs
+        run: |
+          echo "✅ GitHub Pages is live!"
+          echo "Main URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          echo ""
+          echo "📂 Sub-projects you can visit:"
+          for dir in */ ; do
+            if [[ -f "$dir/index.html" ]]; then
+              name=$(basename "$dir")
+              echo "- https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/$name/"
+            fi
+          done
