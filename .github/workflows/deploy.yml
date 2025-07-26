@@ -17,36 +17,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Detect changed folder
+      - name: Detect Last Modified Folder
         id: detect
         run: |
-          echo "Detecting changed subproject folder..."
-          changed=$(git diff --name-only origin/main...HEAD | grep '/' | cut -d/ -f1 | sort -u | head -n 1)
-          echo "Detected folder: $changed"
-          echo "folder=$changed" >> $GITHUB_OUTPUT
+          echo "Detecting modified subfolder..."
+          folder=$(git diff --name-only origin/main...HEAD | grep '/' | cut -d/ -f1 | sort | uniq | tail -n 1)
+          if [ -z "$folder" ] || [ ! -d "$folder" ]; then
+            echo "No valid subfolder found. Exiting."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Found folder: $folder"
+            echo "folder=$folder" >> $GITHUB_OUTPUT
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Skip deployment if no subproject folder found
-        if: ${{ steps.detect.outputs.folder == '' }}
-        run: |
-          echo "⚠️ No subproject folder detected. Skipping deployment."
-          exit 0
+      - name: Exit if No Valid Folder
+        if: ${{ steps.detect.outputs.skip == 'true' }}
+        run: exit 0
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact
+      - name: Upload Site Files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "${{ steps.detect.outputs.folder }}"
+          path: ${{ steps.detect.outputs.folder }}
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      - name: 🔗 Print deployed URL
+      - name: Print Deployed URL
         run: |
-          echo "✅ Subproject deployed successfully!"
-          echo "🌐 URL:"
+          echo "✅ Deployment Successful!"
+          echo "🔗 URL:"
           echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ steps.detect.outputs.folder }}/"
