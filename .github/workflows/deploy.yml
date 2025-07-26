@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '.github/workflows/**'
 
 permissions:
   contents: read
@@ -21,16 +23,16 @@ jobs:
       - name: Detect changed folder
         id: detect
         run: |
-          echo "Detecting changes..."
+          echo "Detecting changed folders..."
           changed=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '/' | cut -d/ -f1 | sort -u)
           echo "Detected folder: $changed"
           echo "folder=$changed" >> $GITHUB_OUTPUT
 
-      - name: Stop if folder not found
+      - name: Skip deployment if no subproject folder found
         if: ${{ steps.detect.outputs.folder == '' }}
         run: |
-          echo "❌ No folder detected — skipping deployment."
-          exit 1
+          echo "⚠️ No subproject folder detected. Skipping deployment."
+          exit 0
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -43,7 +45,7 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
-      - name: 🔗 Print project URL
+      - name: 🔗 Print Deployed URL
         run: |
-          echo "✅ Deployed to:"
-          echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ steps.detect.outputs.folder }}/"
+          echo "✅ Subproject deployed to:"
+          echo "🔗 https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ steps.detect.outputs.folder }}/"
