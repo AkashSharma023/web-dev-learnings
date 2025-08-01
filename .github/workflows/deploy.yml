@@ -25,6 +25,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."  # deploy the whole repo (with all subfolders)
+          retention-days: 1  # Auto-delete artifact after 1 day
 
       - name: Deploy to GitHub Pages
         id: deployment
